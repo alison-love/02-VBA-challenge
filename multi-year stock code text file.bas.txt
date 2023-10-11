@@ -1,0 +1,189 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Sheet1"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Sub stock_analysis()
+
+    'set variables for worksheet
+    Dim ws As Worksheet
+    
+    'loop through all worksheets in the workbook
+    For Each ws In ThisWorkbook.Worksheets
+        
+        'create and name new columns
+        ws.Columns("I:L").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        ws.Cells(1, 9).Value = "ticker"
+        ws.Cells(1, 10).Value = "yearly change"
+        ws.Cells(1, 11).Value = "percent change"
+        ws.Cells(1, 12).Value = "total stock volume"
+    
+        'set variables for loop
+        Dim ticker_input As String
+        Dim volume_per_day As LongLong
+        Dim total_volume As LongLong
+        Dim price_at_open As Double
+        Dim price_at_close As Double
+        Dim yearly_change As Double
+        Dim percent_change As Double
+        
+        
+        Dim i As LongLong
+        Dim last_row As LongLong
+        Dim summary_table_row As LongLong
+    
+    
+    '    output specification and total volume starting point
+        summary_table_row = 2
+        total_volume = 0
+        price_at_open = ws.Cells(2, 3).Value
+    
+    
+    '    determine last row
+        last_row = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+        
+    '   loop through cells to calculate total volume per ticker
+        For i = 2 To last_row
+        
+            'est. current values
+            ticker_input = ws.Cells(i, 1).Value
+            volume_per_day = ws.Cells(i, 7).Value
+            
+            'est. total_volume_value
+            total_volume = total_volume + volume_per_day
+            
+    '       determine when current ticker value changes to next ticker value
+            If ws.Cells(i, 1).Value <> ws.Cells(i + 1, 1).Value Then
+                'est. closing price for current ticker
+                price_at_close = ws.Cells(i, 6).Value
+                
+                'and then calculate yearly change and percent change
+                yearly_change = price_at_close - price_at_open
+                If price_at_open <> 0 Then
+                    percent_change = (yearly_change / price_at_open) * 100
+                Else
+                    percent_change = 0
+                End If
+            
+                
+                'specify output location
+                ws.Cells(summary_table_row, 9).Value = ticker_input
+                ws.Cells(summary_table_row, 10).Value = yearly_change
+                ws.Cells(summary_table_row, 11).Value = percent_change
+                ws.Cells(summary_table_row, 12).Value = total_volume
+    '
+    '           move to the next summary row and set total_volume and price_at_open back to 0
+                summary_table_row = summary_table_row + 1
+                total_volume = 0
+                If i <> last_row Then
+                    price_at_open = ws.Cells(i + 1, 3).Value
+                End If
+            
+            End If
+        Next i
+        ws.Range("A2:Z" & last_row).Interior.ColorIndex = xlNone
+    Next ws
+End Sub
+
+Sub conditional_formatting()
+
+    Dim ws As Worksheet
+    Dim last_row As Long
+    Dim cell As Range
+    Dim col As Variant
+
+'    loop through all worksheets in the workbook
+    For Each ws In ThisWorkbook.Worksheets
+
+        last_row = ws.Cells(ws.Rows.Count, "J").End(xlUp).Row
+
+        'clear prev formatting
+        ws.Range("J2:K" & last_row).Interior.ColorIndex = xlNone
+'         Loop through the range and format both columns "J" and "K"
+        For i = 2 To last_row
+            For Each col In Array(10, 11) 'Columns J and K
+                Set cell = ws.Cells(i, col)
+
+                If cell.Value > 0 Then
+                    cell.Interior.Color = RGB(0, 255, 0) ' Green
+                ElseIf cell.Value < 0 Then
+                    cell.Interior.Color = RGB(255, 0, 0) ' Red
+                End If
+            Next col
+        Next i
+    Next ws
+End Sub
+
+Sub summary_table()
+    Dim ws As Worksheet
+    Dim last_row As Long
+    Dim greatest_percent_increase As Double
+    Dim greatest_percent_decrease As Double
+    Dim greatest_total_volume As LongLong
+    Dim ticker_greatest_increase As String
+    Dim ticker_greatest_decrease As String
+    Dim ticker_greatest_volume As String
+
+    For Each ws In ThisWorkbook.Worksheets
+
+        'set starting values at 0
+        greatest_percent_increase = 0
+        greatest_percent_decrease = 0
+        greatest_total_volume = 0
+        ticker_greatest_increase = ""
+        ticker_greatest_decrease = ""
+        ticker_greatest_volume = ""
+
+        last_row = ws.Cells(ws.Rows.Count, "J").End(xlUp).Row
+
+        For i = 2 To last_row
+
+            'greatest percent increase
+            If ws.Cells(i, 11).Value > greatest_percent_increase Then
+                greatest_percent_increase = ws.Cells(i, 11).Value
+                ticker_greatest_increase = ws.Cells(i, 9).Value
+            End If
+
+            'greatest percent decrease
+            If ws.Cells(i, 11).Value < greatest_percent_decrease Then
+                greatest_percent_decrease = ws.Cells(i, 11).Value
+                ticker_greatest_decrease = ws.Cells(i, 9).Value
+            End If
+
+            'greatest total volume
+            If ws.Cells(i, 12).Value > greatest_total_volume Then
+                greatest_total_volume = ws.Cells(i, 12).Value
+                ticker_greatest_volume = ws.Cells(i, 9).Value
+            End If
+        Next i
+
+        'create the summary table
+
+        'assign headers to the table
+        ws.Range("P1").Value = "ticker"
+        ws.Range("Q1").Value = "value"
+
+        'assign row names to table
+        ws.Range("O2").Value = "greatest percent increase"
+        ws.Range("O3").Value = "greatest percent decrease"
+        ws.Range("O4").Value = "greatest total volume"
+
+        'apply calculated values to table
+        ws.Range("Q2").Value = greatest_percent_increase
+        ws.Range("Q3").Value = greatest_percent_decrease
+        ws.Range("Q4").Value = greatest_total_volume
+
+        'apply tickers assoc with calc values
+        ws.Range("P2").Value = ticker_greatest_increase
+        ws.Range("P3").Value = ticker_greatest_decrease
+        ws.Range("P4").Value = ticker_greatest_volume
+
+    Next ws
+End Sub
+
+
+
