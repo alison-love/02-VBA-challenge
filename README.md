@@ -5,4 +5,4 @@
 2. I further condensed the information into a relevant summary table stating which ticker had the highest % gain, the highest % lost, and the greatest total stock volume for each year.
 
 
-The code was written by myself, alone. However, I did utilize the AI engine ChatGPT.com to clean up a few pieces of syntax and identify errors in the code. 
+I wrote the entirety of this code myself. However, I did utilize the AI engine ChatGPT.com to clean up a few pieces of syntax/organization and identify errors in the code.
